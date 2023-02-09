@@ -100,7 +100,7 @@ help() {
     echo -e "Cloud init image preparation tool for virt and virt-manager"
     echo
     echo -e "${YELLOW}SYNTAX${CLEAR}"
-    echo -e "./cloud-image.sh [download|prepare|run|all] [-h] [-n|o|m|c|u] [ARG]"
+    echo -e "./virt-cloud-init.sh [download|prepare|run|all] [-h] [-n|o|m|c|u] [ARG]"
     echo
     echo -e "${YELLOW}COMMANDS${CLEAR}"
     echo -e "download            Download iso"
