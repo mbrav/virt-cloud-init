@@ -1,0 +1,47 @@
+#cloud-config
+hostname: default-vm
+# chpasswd: { expire: False }
+# password: master
+
+# system_info:
+#   default_user:
+#     name: kube
+#     home: /home/kube
+#     sudo: ALL=(ALL) NOPASSWD:ALL
+
+users:
+  - name: kube
+    gecos: Kubernetes Clustorious
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    home: /home/kube
+    shell: /bin/bash
+    lock_passwd: false
+    # Generate with:
+    # $ mkpasswd --method=SHA-512 --rounds=4096
+    hashed_passwd: |
+      $6$rounds=4096$pBZCcpBYJ45UWZvO$79Bi.56lBlpOv/jNcc6gEEyr1z/LtfW0SV227xWbEI2lUOLtHwPBlRv7m4K9wDq0nkMt5gBDRN92MD1JHzsaB0
+    # plain_text_passwd: master
+
+# Env variables
+write_files:
+  - path: /etc/environment
+    content: |
+      MY_ENV="my value"
+    append: true
+
+# if you want to allow SSH with password, set this to true
+ssh_pwauth: True
+
+# list of packages to install after the VM comes up
+package_upgrade: true
+packages:
+  - qemu-guest-agent
+  - htop
+
+#run the commands after the first install, the last command is saving VM ip into /tmp/my-ip file
+runcmd:
+  - ip addr show $(ip route get 1.1.1.1  | grep -oP 'dev\s+\K[^ ]+') |grep -oP '^\s+inet\s+\K[^/]+' | tee /tmp/my-ip
+
+# written to /var/log/cloud-init-output.log
+final_message: "The system is finally up, after $UPTIME seconds"
