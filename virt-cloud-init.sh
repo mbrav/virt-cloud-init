@@ -1,23 +1,37 @@
 #!/bin/bash
 
-script_version="0.1.0"
+script_version="0.2.0"
 
-image_urls=(
-    "https://cloud.debian.org/images/cloud/buster/latest/debian-10-generic-arm64.qcow2"
-    "https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-generic-amd64.qcow2"
-    "https://cloud.debian.org/images/cloud/bookworm/daily/latest/debian-12-genericcloud-amd64-daily.qcow2"
+image_list=(
+    # Debian
+    "debian12 https://cloud.debian.org/images/cloud/bookworm/daily/latest/debian-12-genericcloud-amd64-daily.qcow2"
+    "debian11 https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-generic-amd64.qcow2"
+    "debian10 https://cloud.debian.org/images/cloud/buster/latest/debian-10-generic-amd64.qcow2"
+    #Ubuntu
+    "ubuntu23.04 https://cloud-images.ubuntu.com/lunar/current/lunar-server-cloudimg-amd64.img"
+    "ubuntu22.04 https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
+    "ubuntu20.04 https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img"
+    "ubuntu18.04 https://cloud-images.ubuntu.com/bionic/current/bionic-server-cloudimg-amd64.img"
+    #Fedora
+    "fedora37 https://mirror.linux-ia64.org/fedora/linux/releases/37/Cloud/x86_64/images/Fedora-Cloud-Base-37-1.7.x86_64.qcow2"
+    "fedora36 https://mirror.linux-ia64.org/fedora/linux/releases/36/Cloud/x86_64/images/Fedora-Cloud-Base-36-1.5.x86_64.qcow2"
 )
 
+# Use debian11 by default 
+img_index=1
+os_info=(${image_list[$img_index]})
+os_variant=${os_info[0]}
+os_url=${os_info[1]}
+image_name=${os_url##*/}
+image_extension=${image_name##*.}
+
+# VM creation default values
 vm_name=default-vm
-os_variant=debian11
 network_name=default
 vm_memory=2048
 vm_storage=16
 vm_vcpus=2
-img_index=1
-url=${image_urls[$img_index]}
-image_name=${url##*/}
-image_no_ext=${image_name%.*}
+
 
 # Script debug for outputting commands
 # Set by running:
@@ -116,8 +130,34 @@ help() {
     echo -e "-s --storage        Specify VM images size in GB. Default: $vm_storage"
     echo -e "-c --cpus           Specify CPU numbers. Default: $vm_vcpus"
     echo -e "-net --network      Specify Network name for VM. Default: $network_name"
-    echo -e "-u --url            Specify custom url to an .qcow2 image. Default: $url"
+    echo -e "-u --url            Specify custom url to an .qcow2 image. Default: $os_url"
     echo
+}
+
+function choose_images() {
+    while [ -z "$prompt_done" ]; do
+        for i in "${!image_list[@]}"; do
+            os_info="${image_list[i]}"
+            os_info=($os_info)
+            echo "${YELLOW}${i}) ${CYAN}${os_info[0]} ${GREY}${os_info[1]##*/}"
+        done
+
+        echo "${GREEN}Please select and image (${YELLOW}0-${#image_list[@]}${GREEN}): ${RED}"
+
+        read -r selected_image
+
+        [ "$selected_image" -ge 0 ] 2>/dev/null && prompt_done=true || error_msg "Option must be an integer"
+    done
+
+    img_index=$selected_image
+    os_info=(${image_list[$img_index]})
+    os_variant=${os_info[0]}
+    os_url=${os_info[1]}
+    image_name=${os_url##*/}
+    image_extension=${image_name##*.}
+
+
+    success_msg "$os_variant $image_name selected"
 }
 
 # Run command
@@ -132,7 +172,7 @@ download_iso() {
     info_msg "Downloading $image_name ..."
 
     if [ ! -f "./downloads/$image_name" ]; then
-        wget $url -O "./downloads/$image_name"
+        wget $os_url -O "./downloads/$image_name"
         [ -f "./downloads/$image_name" ] && success_msg "Image downloaded" || error_msg "Image failed to download" 1
     else
         success_msg "Image $image_name already downloaded"
@@ -149,31 +189,36 @@ prepare_iso() {
         error_msg "cloud-localds not installed! Please install" 
     fi
 
+    info_msg "Replacing hostname with $vm_name in cloud-init.yml"
+    sed -i "s/hostname:.*/hostname: $vm_name/" cloud-init.yml 
+
     mkdir -pv ./disk ./cloud
+    info_msg "Generating cloudinit image"
+    sudo cloud-localds cloud/$vm_name-init.img cloud-init.yml
 
     echo -e "$CYAN----SOURCE IMAGE INFO----$YELLOW"
     qemu-img info "downloads/$image_name"
     echo -e "$CLEAR"
 
-    info_msg "Converting image"
+    # Convert image extension to raw when .img
+    [ "$image_extension" = img ] && image_extension=raw
+
+    info_msg "Converting image to .qcow2"
     sudo qemu-img convert \
-        -f qcow2 \
-        -O qcow2 "downloads/$image_name" \
+        -f $image_extension \
+        -O qcow2 \
+        "downloads/$image_name" \
         "disk/$vm_name-disk.qcow2"
 
     info_msg "Resizing image"
     sudo qemu-img resize "disk/$vm_name-disk.qcow2" "${vm_storage}G"
 
-    info_msg "Generating cloudinit image"
-    sudo cloud-localds cloud/$vm_name-init.img cloud-init.yml
-
+    echo -e "$CYAN----CLOUD INIT IMAGE INFO----$YELLOW"
+    qemu-img info cloud/$vm_name-init.img
+    echo -e "$CLEAR"
 
     echo -e "$CYAN----DISK IMAGE INFO----$YELLOW"
     qemu-img info "disk/$vm_name-disk.qcow2"
-    echo -e "$CLEAR"
-
-    echo -e "$CYAN----CLOUD INIT IMAGE INFO----$YELLOW"
-    qemu-img info cloud/$vm_name-init.img
     echo -e "$CLEAR"
 }
 
@@ -241,6 +286,11 @@ else
                 shift # shift argument
                 shift # shift value
             ;;
+            --url|-u)
+                os_url="$2"
+                shift # shift argument
+                shift # shift value
+            ;;
             --memory|-m)
                 vm_memory="$2"
                 shift # shift argument
@@ -261,11 +311,6 @@ else
                 shift # shift argument
                 shift # shift value
             ;;
-            --url|-u)
-                url="$2"
-                shift # shift argument
-                shift # shift value
-            ;;
             -*)
                 error_msg "Unknown option $1" 22
                 exit 1
@@ -279,6 +324,9 @@ else
         esac
     done
 fi
+
+# Run image chooser by default
+choose_images
 
 # Run Command parser
 case $script_command in

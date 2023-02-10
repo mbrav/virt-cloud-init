@@ -1,13 +1,6 @@
-#cloud-config
+# cloud-config
+# See examples: https://github.com/canonical/cloud-init/tree/main/doc/examples 
 hostname: default-vm
-# chpasswd: { expire: False }
-# password: master
-
-# system_info:
-#   default_user:
-#     name: kube
-#     home: /home/kube
-#     sudo: ALL=(ALL) NOPASSWD:ALL
 
 users:
   - name: kube
@@ -16,25 +9,28 @@ users:
     groups: users, admin
     home: /home/kube
     shell: /bin/bash
-    lock_passwd: false
+    lock_passwd: False
     # Generate with:
     # $ mkpasswd --method=SHA-512 --rounds=4096
     hashed_passwd: |
       $6$rounds=4096$pBZCcpBYJ45UWZvO$79Bi.56lBlpOv/jNcc6gEEyr1z/LtfW0SV227xWbEI2lUOLtHwPBlRv7m4K9wDq0nkMt5gBDRN92MD1JHzsaB0
     # plain_text_passwd: master
+    # groups: [adm, netdev]
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDSL7uWGj8cgWyIOaspgKdVy0cKJ+UTjfv7jBOjG2H/GN8bJVXy72XAvnhM0dUM+CCs8FOf0YlPX+Frvz2hKInrmRhZVwRSL129PasD12MlI3l44u6IwS1o/W86Q+tkQYEljtqDOo0a+cOsaZkvUNzUyEXUwz/lmYa6G4hMKZH4NBj7nbAAF96wsMCoyNwbWryBnDYUr6wMbjRR1J9Pw7Xh7WRC73wy4Va2YuOgbD3V/5ZrFPLbWZW/7TFXVrql04QVbyei4aiFR5n//GvoqwQDNe58LmbzX/xvxyKJYdny2zXmdAhMxbrpFQsfpkJ9E/H5w0yOdSvnWbUoG5xNGoOB csmith@fringe
 
 # Env variables
 write_files:
   - path: /etc/environment
     content: |
       MY_ENV="my value"
-    append: true
+    append: True
 
 # if you want to allow SSH with password, set this to true
 ssh_pwauth: True
 
 # list of packages to install after the VM comes up
-package_upgrade: true
+package_upgrade: True
 packages:
   - qemu-guest-agent
   - htop

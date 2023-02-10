@@ -13,7 +13,6 @@ cloud/
 disk/
 downloads/
 virt-cloud-init.sh
-LICENSE
 cloud-init.yml
 ```
 
@@ -21,7 +20,9 @@ cloud-init.yml
 - The *disk/* folder will store disk images of your VMs.
 - The *downloads/* folder will store all the downloaded *.qcow2* images.
 
-Currently, the script can be customized using argument flags. Other cusomization will be added in the future.
+Currently, the script can be customized using argument flags. Other customization will be added in the future.
+
+Before a run, edit the *cloud-init.yml* file according to your needs. Examples can be found at [cloud inits GitHub repo](https://github.com/canonical/cloud-init/tree/main/doc/examples).
 
 ## Script arguments
 
@@ -58,6 +59,23 @@ OPTIONS
 -u --url            Specify custom url to an .qcow2 image. Default: <https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-generic-amd64.qcow2>
 ```
 
+Upon every run, you get the following interactive prompt:
+
+```text
+0) debian12 debian-12-genericcloud-amd64-daily.qcow2
+1) debian11 debian-11-generic-amd64.qcow2
+2) debian10 debian-10-generic-amd64.qcow2
+3) ubuntu23.04 lunar-server-cloudimg-amd64.img
+4) ubuntu22.04 jammy-server-cloudimg-amd64.img
+5) ubuntu20.04 focal-server-cloudimg-amd64.img
+6) ubuntu18.04 bionic-server-cloudimg-amd64.img
+7) fedora37 Fedora-Cloud-Base-37-1.7.x86_64.qcow2
+8) fedora36 Fedora-Cloud-Base-36-1.5.x86_64.qcow2
+Please select and image (0-9):
+7
+[✓] fedora37 Fedora-Cloud-Base-37-1.7.x86_64.qcow2 selected
+```
+
 ## Examples
 
 Download default Debian 11 image:
@@ -90,3 +108,8 @@ More info on this issue on [StackOverflow](https://stackoverflow.com/questions/3
 ```bash
 ./virt-cloud-init.sh run -n my-vm -m 4096
 ```
+
+Once you run initialize you vm in the output console, press `ctrl + ]` to exit tty.
+
+
+cd /run/media/mbrav/hd1/iso && ./virt-cloud-init.sh all -m 4096 -c 2 -s 12 -n node1
