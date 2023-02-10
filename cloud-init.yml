@@ -1,36 +1,33 @@
-# cloud-config
-# See examples: https://github.com/canonical/cloud-init/tree/main/doc/examples 
-hostname: default-vm
+#cloud-config
+hostname: test
 
 users:
   - name: kube
     gecos: Kubernetes Clustorious
     sudo: ALL=(ALL) NOPASSWD:ALL
     groups: users, admin
-    home: /home/kube
     shell: /bin/bash
-    lock_passwd: False
+    lock_passwd: false
     # Generate with:
     # $ mkpasswd --method=SHA-512 --rounds=4096
     hashed_passwd: |
       $6$rounds=4096$pBZCcpBYJ45UWZvO$79Bi.56lBlpOv/jNcc6gEEyr1z/LtfW0SV227xWbEI2lUOLtHwPBlRv7m4K9wDq0nkMt5gBDRN92MD1JHzsaB0
     # plain_text_passwd: master
-    # groups: [adm, netdev]
     ssh_authorized_keys:
-      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDSL7uWGj8cgWyIOaspgKdVy0cKJ+UTjfv7jBOjG2H/GN8bJVXy72XAvnhM0dUM+CCs8FOf0YlPX+Frvz2hKInrmRhZVwRSL129PasD12MlI3l44u6IwS1o/W86Q+tkQYEljtqDOo0a+cOsaZkvUNzUyEXUwz/lmYa6G4hMKZH4NBj7nbAAF96wsMCoyNwbWryBnDYUr6wMbjRR1J9Pw7Xh7WRC73wy4Va2YuOgbD3V/5ZrFPLbWZW/7TFXVrql04QVbyei4aiFR5n//GvoqwQDNe58LmbzX/xvxyKJYdny2zXmdAhMxbrpFQsfpkJ9E/H5w0yOdSvnWbUoG5xNGoOB csmith@fringe
+      - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDRCJCQ1UD9QslWDSw5Pwsvba0Wsf1pO4how5BtNaZn0xLZpTq2nqFEJshUkd/zCWF7DWyhmNphQ8c+U+wcmdNVcg2pI1kPxq0VZzBfZ7cDwhjgeLsIvTXvU+HVRtsXh4c5FlUXpRjf/x+a3vqFRvNsRd1DE+5ZqQHbOVbnsStk3PZppaByMg+AZZMx56OUk2pZCgvpCwj6LIixqwuxNKPxmJf45RyOsPUXwCwkq9UD4me5jksTPPkt3oeUWw1ZSSF8F/141moWsGxSnd5NxCbPUWGoRfYcHc865E70nN4WrZkM7RFI/s5mvQtuj8dRL67JUEwvdvEDO0EBz21FV/iOracXd2omlTUSK+wYrWGtiwQwEgr4r5bimxDKy9L8UlaJZ+ONhLTP8ecTHYkaU1C75sLX9ZYd5YtqjiNGsNF+wdW6WrXrQiWeyrGK7ZwbA7lagSxIa7yeqnKDjdkcJvQXCYGLM9AMBKWeJaOpwqZ+dOunMDLd5VZrDCU2lpCSJ1M="
 
 # Env variables
 write_files:
   - path: /etc/environment
     content: |
       MY_ENV="my value"
-    append: True
+    append: true
 
 # if you want to allow SSH with password, set this to true
 ssh_pwauth: True
 
 # list of packages to install after the VM comes up
-package_upgrade: True
+package_upgrade: true
 packages:
   - qemu-guest-agent
   - htop
