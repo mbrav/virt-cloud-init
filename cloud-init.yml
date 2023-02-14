@@ -1,7 +1,7 @@
 #cloud-config
 # See examples: https://github.com/canonical/cloud-init/tree/main/doc/examples
 
-# Hostname is automatically replaced with virt-cloud-init.sh script upon execution 
+# Hostname is automatically replaced with virt-cloud-init.sh script upon execution
 hostname: default-vm
 locale: en_US.UTF-8
 
@@ -16,7 +16,7 @@ users:
   - name: kube
     gecos: Kubernetes Clustorious
     sudo: ALL=(ALL) NOPASSWD:ALL
-    groups: users, admin
+    groups: users, adm
     shell: /bin/bash
     lock_passwd: true
     ## Generate with:
