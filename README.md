@@ -35,12 +35,12 @@ To view script's instructions, run:
 You will get the following text
 
 ```text
-virt-cloud-init script v0.1.0
+virt-cloud-init script v0.3.0
 ABOUT
 Cloud init image preparation tool for virt and virt-manager
 
 SYNTAX
-./cloud-image.sh [download|prepare|run|all] [-h] [-n|o|m|c|u] [ARG]
+./virt-cloud-init.sh [download|prepare|run|all] [-h] [-n|o|m|c|u] [ARG]
 
 COMMANDS
 download            Download iso
@@ -56,7 +56,9 @@ OPTIONS
 -s --storage        Specify VM images size in GB. Default: 16
 -c --cpus           Specify CPU numbers. Default: 2
 -net --network      Specify Network name for VM. Default: default
--u --url            Specify custom url to an .qcow2 image. Default: <https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-generic-amd64.qcow2>
+-u --url            Specify custom url to an .qcow2 image. Default: https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-generic-amd64.qcow2
+-i --interactive (WIP)  Attach to console upon VM start. Default: false
+
 ```
 
 Upon every run, you get the following interactive prompt:
@@ -75,6 +77,8 @@ Please select and image (0-9):
 7
 [✓] fedora37 Fedora-Cloud-Base-37-1.7.x86_64.qcow2 selected
 ```
+
+**Note:** Ubuntu support is WIP
 
 ## Examples
 
@@ -110,6 +114,5 @@ More info on this issue on [StackOverflow](https://stackoverflow.com/questions/3
 ```
 
 Once you run initialize you vm in the output console, press `ctrl + ]` to exit tty.
-
 
 cd /run/media/mbrav/hd1/iso && ./virt-cloud-init.sh all -m 4096 -c 2 -s 12 -n node1

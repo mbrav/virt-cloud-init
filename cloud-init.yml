@@ -1,20 +1,35 @@
 #cloud-config
-hostname: test
+# See examples: https://github.com/canonical/cloud-init/tree/main/doc/examples
 
+# Hostname is automatically replaced with virt-cloud-init.sh script upon execution 
+hostname: default-vm
+locale: en_US.UTF-8
+
+# disable ssh access as root.
+disable_root: true
+
+# if you want to allow SSH with password, set this to true
+ssh_pwauth: false
+
+# users[0] (the first user in users) overrides the user directive.
 users:
   - name: kube
     gecos: Kubernetes Clustorious
     sudo: ALL=(ALL) NOPASSWD:ALL
     groups: users, admin
     shell: /bin/bash
-    lock_passwd: false
-    # Generate with:
+    lock_passwd: true
+    ## Generate with:
     # $ mkpasswd --method=SHA-512 --rounds=4096
     hashed_passwd: |
       $6$rounds=4096$pBZCcpBYJ45UWZvO$79Bi.56lBlpOv/jNcc6gEEyr1z/LtfW0SV227xWbEI2lUOLtHwPBlRv7m4K9wDq0nkMt5gBDRN92MD1JHzsaB0
+    ## Or use plaintext
     # plain_text_passwd: master
     ssh_authorized_keys:
       - "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDRCJCQ1UD9QslWDSw5Pwsvba0Wsf1pO4how5BtNaZn0xLZpTq2nqFEJshUkd/zCWF7DWyhmNphQ8c+U+wcmdNVcg2pI1kPxq0VZzBfZ7cDwhjgeLsIvTXvU+HVRtsXh4c5FlUXpRjf/x+a3vqFRvNsRd1DE+5ZqQHbOVbnsStk3PZppaByMg+AZZMx56OUk2pZCgvpCwj6LIixqwuxNKPxmJf45RyOsPUXwCwkq9UD4me5jksTPPkt3oeUWw1ZSSF8F/141moWsGxSnd5NxCbPUWGoRfYcHc865E70nN4WrZkM7RFI/s5mvQtuj8dRL67JUEwvdvEDO0EBz21FV/iOracXd2omlTUSK+wYrWGtiwQwEgr4r5bimxDKy9L8UlaJZ+ONhLTP8ecTHYkaU1C75sLX9ZYd5YtqjiNGsNF+wdW6WrXrQiWeyrGK7ZwbA7lagSxIa7yeqnKDjdkcJvQXCYGLM9AMBKWeJaOpwqZ+dOunMDLd5VZrDCU2lpCSJ1M="
+    ## Import ssh from github
+    # ssh_import_id:
+    #   - gh:mbrav
 
 # Env variables
 write_files:
@@ -23,11 +38,10 @@ write_files:
       MY_ENV="my value"
     append: true
 
-# if you want to allow SSH with password, set this to true
-ssh_pwauth: True
-
 # list of packages to install after the VM comes up
 package_upgrade: true
+package_reboot_if_required: true
+package_update: true
 packages:
   - qemu-guest-agent
   - htop

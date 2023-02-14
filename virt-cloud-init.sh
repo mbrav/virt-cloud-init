@@ -1,37 +1,6 @@
 #!/bin/bash
 
-script_version="0.2.0"
-
-image_list=(
-    # Debian
-    "debian12 https://cloud.debian.org/images/cloud/bookworm/daily/latest/debian-12-genericcloud-amd64-daily.qcow2"
-    "debian11 https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-generic-amd64.qcow2"
-    "debian10 https://cloud.debian.org/images/cloud/buster/latest/debian-10-generic-amd64.qcow2"
-    #Ubuntu
-    "ubuntu23.04 https://cloud-images.ubuntu.com/lunar/current/lunar-server-cloudimg-amd64.img"
-    "ubuntu22.04 https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
-    "ubuntu20.04 https://cloud-images.ubuntu.com/focal/current/focal-server-cloudimg-amd64.img"
-    "ubuntu18.04 https://cloud-images.ubuntu.com/bionic/current/bionic-server-cloudimg-amd64.img"
-    #Fedora
-    "fedora37 https://mirror.linux-ia64.org/fedora/linux/releases/37/Cloud/x86_64/images/Fedora-Cloud-Base-37-1.7.x86_64.qcow2"
-    "fedora36 https://mirror.linux-ia64.org/fedora/linux/releases/36/Cloud/x86_64/images/Fedora-Cloud-Base-36-1.5.x86_64.qcow2"
-)
-
-# Use debian11 by default 
-img_index=1
-os_info=(${image_list[$img_index]})
-os_variant=${os_info[0]}
-os_url=${os_info[1]}
-image_name=${os_url##*/}
-image_extension=${image_name##*.}
-
-# VM creation default values
-vm_name=default-vm
-network_name=default
-vm_memory=2048
-vm_storage=16
-vm_vcpus=2
-
+script_version="0.3.0"
 
 # Script debug for outputting commands
 # Set by running:
@@ -131,6 +100,7 @@ help() {
     echo -e "-c --cpus           Specify CPU numbers. Default: $vm_vcpus"
     echo -e "-net --network      Specify Network name for VM. Default: $network_name"
     echo -e "-u --url            Specify custom url to an .qcow2 image. Default: $os_url"
+    echo -e "-i --interactive (WIP)  Attach to console upon VM start. Default: false"
     echo
 }
 
@@ -139,7 +109,7 @@ function choose_images() {
         for i in "${!image_list[@]}"; do
             os_info="${image_list[i]}"
             os_info=($os_info)
-            echo "${YELLOW}${i}) ${CYAN}${os_info[0]} ${GREY}${os_info[1]##*/}"
+            echo "${YELLOW}${i}) ${CYAN}${os_info[0]} ${GREY}${os_info[2]##*/}"
         done
 
         echo "${GREEN}Please select and image (${YELLOW}0-${#image_list[@]}${GREEN}): ${RED}"
@@ -149,13 +119,11 @@ function choose_images() {
         [ "$selected_image" -ge 0 ] 2>/dev/null && prompt_done=true || error_msg "Option must be an integer"
     done
 
+    # Update image index
     img_index=$selected_image
-    os_info=(${image_list[$img_index]})
-    os_variant=${os_info[0]}
-    os_url=${os_info[1]}
-    image_name=${os_url##*/}
-    image_extension=${image_name##*.}
 
+    # Set image info based on $img_index
+    set_os_info
 
     success_msg "$os_variant $image_name selected"
 }
@@ -233,6 +201,7 @@ run_iso() {
     sudo virt-install \
         --name $vm_name \
         --os-variant $os_variant \
+        --connect qemu:///system \
         --virt-type kvm \
         --memory $vm_memory \
         --vcpus $vm_vcpus \
@@ -242,8 +211,37 @@ run_iso() {
         --boot cdrom \
         --network network="$network_name",model=virtio \
         --graphics none \
-        --console pty,target_type=serial
+        --console pty,target_type="$os_serial"
 }
+
+set_os_info() {
+    # Set os_info based on $img_index
+    os_info=(${image_list[$img_index]})
+    os_variant=${os_info[0]}
+    os_serial=${os_info[1]}
+    os_url=${os_info[2]}
+    image_name=${os_url##*/}
+    image_extension=${image_name##*.}
+}
+
+# Import image list
+source ./images.ini
+
+# Use debian11 by default
+img_index=1
+
+# Set image info
+set_os_info
+
+# VM creation default values
+vm_name=default-vm
+network_name=default
+vm_memory=2048
+vm_storage=16
+vm_vcpus=2
+
+# No interaction by default
+console_interactive="--noautoconsole"
 
 # Run all procedures by default
 script_command=all
@@ -308,6 +306,11 @@ else
             ;;
             --network|-net)
                 network_name="$2"
+                shift # shift argument
+                shift # shift value
+            ;;
+            --interactive|-i)
+                console_interactive=""
                 shift # shift argument
                 shift # shift value
             ;;
