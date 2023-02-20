@@ -95,8 +95,8 @@ help() {
     echo -e "-h --help           Print this Help."
     echo -e "-n --name           Specify VM and image name prefix. Default: $vm_name"
     echo -e "-o --os             Specify OS variant. Default: $os_variant"
-    echo -e "-m --memory         Specify VM memory. Default: $vm_memory"
-    echo -e "-s --storage        Specify VM images size in GB. Default: $vm_storage"
+    echo -e "-m --memory         Specify VM memory (in MiB). Default: $vm_memory"
+    echo -e "-s --storage        Specify VM images size (in K|M|G). Default: $vm_storage"
     echo -e "-c --cpus           Specify CPU numbers. Default: $vm_vcpus"
     echo -e "-net --network      Specify Network name for VM. Default: $network_name"
     echo -e "-u --url            Specify custom url to an .qcow2 image. Default: $os_url"
@@ -179,7 +179,7 @@ prepare_iso() {
         "disk/$vm_name-disk.qcow2"
 
     info_msg "Resizing image"
-    sudo qemu-img resize "disk/$vm_name-disk.qcow2" "${vm_storage}G"
+    sudo qemu-img resize "disk/$vm_name-disk.qcow2" "${vm_storage}"
 
     echo -e "$CYAN----CLOUD INIT IMAGE INFO----$YELLOW"
     qemu-img info cloud/$vm_name-init.img
@@ -237,7 +237,7 @@ set_os_info
 vm_name=default-vm
 network_name=default
 vm_memory=2048
-vm_storage=16
+vm_storage=16G
 vm_vcpus=2
 
 # No interaction by default

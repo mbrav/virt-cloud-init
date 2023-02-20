@@ -46,9 +46,12 @@ packages:
   - qemu-guest-agent
   - htop
 
-#run the commands after the first install, the last command is saving VM ip into /tmp/my-ip file
+# run the commands after the first install, the last command is saving VM ip into /tmp/my-ip file
 runcmd:
+  - curl https://packages.gitlab.com/install/repositories/gitlab/gitlab-ce/script.deb.sh | sudo bash
   - ip addr show $(ip route get 1.1.1.1  | grep -oP 'dev\s+\K[^ ]+') |grep -oP '^\s+inet\s+\K[^/]+' | tee /tmp/my-ip
+  - EXTERNAL_URL="https://$(cat /tmp/my-ip)" sudo apt-get install gitlab-ce
+
 
 # written to /var/log/cloud-init-output.log
 final_message: "The system is finally up, after $UPTIME seconds"
