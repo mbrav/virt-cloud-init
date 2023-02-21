@@ -1,6 +1,6 @@
 #!/bin/bash
 
-script_version="0.3.0"
+script_version="0.4.0"
 
 # Script debug for outputting commands
 # Set by running:
@@ -83,7 +83,7 @@ help() {
     echo -e "Cloud init image preparation tool for virt and virt-manager"
     echo
     echo -e "${YELLOW}SYNTAX${CLEAR}"
-    echo -e "./virt-cloud-init.sh [download|prepare|run|all] [-h] [-n|o|m|c|u] [ARG]"
+    echo -e "./virt-cloud-init.sh [download|prepare|run|all] [-h] [-n|o|m|s|c|net|u|i] [ARG]"
     echo
     echo -e "${YELLOW}COMMANDS${CLEAR}"
     echo -e "download            Download iso"
@@ -157,12 +157,16 @@ prepare_iso() {
         error_msg "cloud-localds not installed! Please install" 
     fi
 
-    info_msg "Replacing hostname with $vm_name in cloud-init.yml"
-    sed -i "s/hostname:.*/hostname: $vm_name/" cloud-init.yml 
+    mkdir -pv disk cloud
+    info_msg "Generating cloudinit yml file"
+    [ -f "cloud/$vm_name-init.yml" ] && warning_msg "Overwriting cloud/$vm_name-init.yml file"
+    cp -f cloud-init.yml cloud/$vm_name-init.yml
 
-    mkdir -pv ./disk ./cloud
+    info_msg "Replacing hostname with $vm_name in cloud/$vm_name-init.yml"
+    sed -i "s/hostname:.*/hostname: $vm_name/" cloud/$vm_name-init.yml
+
     info_msg "Generating cloudinit image"
-    sudo cloud-localds cloud/$vm_name-init.img cloud-init.yml
+    sudo cloud-localds cloud/$vm_name-init.img cloud/$vm_name-init.yml
 
     echo -e "$CYAN----SOURCE IMAGE INFO----$YELLOW"
     qemu-img info "downloads/$image_name"
@@ -337,6 +341,7 @@ case $script_command in
         download_iso
     ;;
     prepare)
+        download_iso
         prepare_iso
     ;;
     run)

@@ -35,12 +35,12 @@ To view script's instructions, run:
 You will get the following text
 
 ```text
-virt-cloud-init script v0.3.0
+virt-cloud-init script v0.4.0
 ABOUT
 Cloud init image preparation tool for virt and virt-manager
 
 SYNTAX
-./virt-cloud-init.sh [download|prepare|run|all] [-h] [-n|o|m|c|u] [ARG]
+./virt-cloud-init.sh [download|prepare|run|all] [-h] [-n|o|m|s|c|net|u|i] [ARG]
 
 COMMANDS
 download            Download iso
@@ -52,13 +52,12 @@ OPTIONS
 -h --help           Print this Help.
 -n --name           Specify VM and image name prefix. Default: default-vm
 -o --os             Specify OS variant. Default: debian11
--m --memory         Specify VM memory. Default: 2048
--s --storage        Specify VM images size in GB. Default: 16
+-m --memory         Specify VM memory (in MiB). Default: 2048
+-s --storage        Specify VM images size (in K|M|G). Default: 16G
 -c --cpus           Specify CPU numbers. Default: 2
 -net --network      Specify Network name for VM. Default: default
 -u --url            Specify custom url to an .qcow2 image. Default: https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-generic-amd64.qcow2
 -i --interactive (WIP)  Attach to console upon VM start. Default: false
-
 ```
 
 Upon every run, you get the following interactive prompt:
