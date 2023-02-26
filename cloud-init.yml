@@ -18,7 +18,7 @@ users:
     sudo: ALL=(ALL) NOPASSWD:ALL
     groups: users, adm
     shell: /bin/bash
-    lock_passwd: true
+    lock_passwd: false
     ## Generate with:
     # $ mkpasswd --method=SHA-512 --rounds=4096
     hashed_passwd: |

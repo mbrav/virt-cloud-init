@@ -1,0 +1,74 @@
+#cloud-config
+# See examples: https://github.com/canonical/cloud-init/tree/main/doc/examples
+
+# Hostname is automatically replaced with virt-cloud-init.sh script upon execution
+hostname: default
+locale: en_US.UTF-8
+
+# disable ssh access as root.
+disable_root: true
+
+# if you want to allow SSH with password, set this to true
+ssh_pwauth: false
+
+# users[0] (the first user in users) overrides the user directive.
+users:
+  - name: dev
+    gecos: Kubernetes Clustorious
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, adm
+    shell: /bin/fish
+    lock_passwd: false
+    ## Generate with:
+    # $ mkpasswd --method=SHA-512 --rounds=4096
+    hashed_passwd: |
+      $6$rounds=4096$LLGCkB8qMx2H0WuZ$5mgqYhI6Xw1VgN6ZMH8qd5Uv7ZznXnG/RluBurVPyFzFRiza.xOk/.XGAB6Qmc3.z3vceeHY2nF5ZokDdHVKf0
+
+# Env variables
+write_files:
+  - path: /etc/environment
+    content: |
+      LINUX_USER=dev
+    append: true
+
+# list of packages to install after the VM comes up
+package_upgrade: true
+package_reboot_if_required: true
+package_update: true
+packages:
+  - qemu-guest-agent
+  - bash
+  - tmux
+  - fish
+  - curl
+  - wget
+  - htop
+  - git
+  - exa
+  - bat
+  # - makepkg
+
+# run the commands after the first install, the last command is saving VM ip into /tmp/my-ip file
+runcmd:
+  # Link batcat to bat
+  - ln -s /usr/bin/batcat /usr/local/bin/bat
+  # Setup Fish folder
+  - mkdir -p /home/dev/.config/fish
+  # Install garuda's Fish config
+  - git clone https://gitlab.com/garuda-linux/themes-and-settings/settings/garuda-fish-config.git /tmp/fish
+  - cat /tmp/fish/config.fish >> /etc/fish/config.fish
+  # Remove Garuda specific mods
+  - sed -i '/find-the-command/ { N; d; }' /etc/fish/config.fish
+  - sed -i 's,/usr/bin/starship,/usr/local/bin/starship,g' /etc/fish/config.fish
+  # Install Starship with no interaction
+  - curl -sS https://starship.rs/install.sh | FORCE=1 sh
+  # Install Garuda's Starship config
+  - git clone https://gitlab.com/garuda-linux/themes-and-settings/settings/garuda-starship-prompt.git /tmp/starship
+  - cp -v /tmp/starship/starship.toml /home/dev/.config/starship.toml
+  # Customize colors a bit to distinguish things
+  - sed -i 's,bold red,bold yellow,g' /home/dev/.config/starship.toml
+  - sed -i 's,bold dimmed red,bold dimmed yellow,g' /home/dev/.config/starship.toml
+  - chown -R dev:dev /home/dev/.config
+
+# written to /var/log/cloud-init-output.log
+final_message: "The system is finally up, after $UPTIME seconds"
