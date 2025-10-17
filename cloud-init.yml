@@ -31,6 +31,14 @@ users:
     # ssh_import_id:
     #   - gh:mbrav
 
+# IPv6 is disabled by default
+network:
+  version: 2
+  ethernets:
+    eth0:
+      dhcp4: true
+      dhcp6: false
+
 # Env variables
 write_files:
   - path: /etc/environment
