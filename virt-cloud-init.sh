@@ -1,6 +1,6 @@
 #!/bin/bash
 
-script_version="0.4.0"
+script_version="0.5.0"
 
 # Script debug for outputting commands
 # Set by running:
@@ -61,7 +61,7 @@ function error_msg() {
     # $1            - Message string argument 
     # $2 (optional) - exit code  
     echo -e "${RED}${BOLD}[X] ${1}${CLEAR}"
-    [[ -n $2 ]] && exit $2
+    [[ -n "$2" ]] && exit "$2"
 }
 
 function warning_msg() {
@@ -83,13 +83,14 @@ help() {
     echo -e "Cloud init image preparation tool for virt and virt-manager"
     echo
     echo -e "${YELLOW}SYNTAX${CLEAR}"
-    echo -e "./virt-cloud-init.sh [download|prepare|run|all] [-h] [-n|o|m|s|c|net|u|i] [ARG]"
+    echo -e "./virt-cloud-init.sh [download|prepare|create|regenerate-cloud-init|all] [-h] [-n|o|m|s|c|net|img|u|i|b] [ARG]"
     echo
     echo -e "${YELLOW}COMMANDS${CLEAR}"
-    echo -e "download            Download iso"
-    echo -e "prepare             Prepare image and cloud-init iso"
-    echo -e "run                 Run image with cloud-init iso"
-    echo -e "all                 Run All commands above consecutively"
+    echo -e "download               Download iso"
+    echo -e "prepare                Prepare image and cloud-init iso"
+    echo -e "create                 Create VM with cloud-init iso (optionally can run)"
+    echo -e "regenerate-cloud-init  Cleans VM disk off cloud-init, regenerates the iso"
+    echo -e "all                    Run All commands above consecutively"
     echo
     echo -e "${YELLOW}OPTIONS${CLEAR}"
     echo -e "-h --help           Print this Help."
@@ -99,28 +100,36 @@ help() {
     echo -e "-s --storage        Specify VM images size (in K|M|G). Default: $vm_storage"
     echo -e "-c --cpus           Specify CPU numbers. Default: $vm_vcpus"
     echo -e "-net --network      Specify Network name for VM. Default: $network_name"
+    echo -e "-img --image-index  Specify a known config listed in images.ini. By default asks dynamically."
     echo -e "-u --url            Specify custom url to an .qcow2 image. Default: $os_url"
-    echo -e "-i --interactive (WIP)  Attach to console upon VM start. Default: false"
+    echo -e "-i --interactive    Flag to attaching console upon VM start (also boots the VM)."
+    echo -e "-b --boot           Flag for booting VM after creation."
     echo
 }
 
 function choose_images() {
-    while [ -z "$prompt_done" ]; do
-        for i in "${!image_list[@]}"; do
-            os_info="${image_list[i]}"
-            os_info=($os_info)
-            echo "${YELLOW}${i}) ${CYAN}${os_info[0]} ${GREY}${os_info[2]##*/}"
+    # If an image index is not passed from command line
+    if [ -z "${1}" ]; then
+        while [ -z "$prompt_done" ]; do
+            for i in "${!image_list[@]}"; do
+                #os_info="${image_list[i]}"
+                #os_info=($os_info)
+		os_info=( ${image_list[i]} )
+                echo "${YELLOW}${i}) ${CYAN}${os_info[0]} ${GREY}${os_info[2]##*/}"
+            done
+
+            echo "${GREEN}Please select and image (${YELLOW}0-${#image_list[@]}${GREEN}): ${RED}"
+
+            read -r selected_image
+
+            [ "$selected_image" -ge 0 ] 2>/dev/null && prompt_done=true || error_msg "Option must be an integer"
         done
 
-        echo "${GREEN}Please select and image (${YELLOW}0-${#image_list[@]}${GREEN}): ${RED}"
-
-        read -r selected_image
-
-        [ "$selected_image" -ge 0 ] 2>/dev/null && prompt_done=true || error_msg "Option must be an integer"
-    done
-
-    # Update image index
-    img_index=$selected_image
+        # Update image index
+        img_index=$selected_image
+    else
+	os_info=( ${image_list[${img_index}]} )
+    fi
 
     # Set image info based on $img_index
     set_os_info
@@ -147,17 +156,12 @@ download_iso() {
     fi
 }
 
-prepare_iso() {
-
-    if ! command -v qemu-img > /dev/null; then
-        error_msg "qemu-img not installed! Please install" 1
-    fi
-
+generate_cloud_init_disk() {
     if ! command -v cloud-localds > /dev/null; then
-        error_msg "cloud-localds not installed! Please install" 
+        error_msg "cloud-localds is not installed! Please install 'cloud-image-utils'" 1
     fi
 
-    mkdir -pv disk cloud
+    mkdir -pv cloud
     info_msg "Generating cloudinit yml file"
     [ -f "cloud/$vm_name-init.yml" ] && warning_msg "Overwriting cloud/$vm_name-init.yml file"
     cp -f cloud-init.yml cloud/$vm_name-init.yml
@@ -167,6 +171,27 @@ prepare_iso() {
 
     info_msg "Generating cloudinit image"
     sudo cloud-localds cloud/$vm_name-init.img cloud/$vm_name-init.yml
+}
+
+regenerate_cloud_init_disk() {
+    if ! command -v cloud-localds > /dev/null; then
+        error_msg "virt-customize is not installed! Please install 'libguestfs-tools'" 1
+    fi
+
+    virt-customize -a disk/debarm-disk.qcow2 --run-command "cloud-init clean"
+
+    generate_cloud_init_disk
+}
+
+prepare_iso() {
+
+    if ! command -v qemu-img > /dev/null; then
+        error_msg "qemu-img not installed! Please install" 1
+    fi
+
+    mkdir -pv disk
+
+    generate_cloud_init_disk
 
     echo -e "$CYAN----SOURCE IMAGE INFO----$YELLOW"
     qemu-img info "downloads/$image_name"
@@ -194,8 +219,7 @@ prepare_iso() {
     echo -e "$CLEAR"
 }
 
-run_iso() {
-
+create_vm() {
     if ! command -v virt-install > /dev/null; then
         error_msg "virt-install not installed! Please install" 1
     fi
@@ -203,16 +227,18 @@ run_iso() {
     info_msg "Creating vm"
 
     sudo virt-install \
-        --name $vm_name \
-        --os-variant $os_variant \
+	--noreboot \
+	--autoconsole "${option_attach_console}" \
+	--install no_install="${option_do_not_boot}" \
+        --name "${vm_name}" \
+        --os-variant "${os_variant}" \
         --connect qemu:///system \
         --virt-type kvm \
-        --memory $vm_memory \
-        --vcpus $vm_vcpus \
+        --memory "${vm_memory}" \
+        --vcpus "${vm_vcpus}" \
         --boot hd,menu=on \
-        --cdrom "cloud/$vm_name-init.img" \
-        --disk "disk/$vm_name-disk.qcow2",device=disk,bus=virtio \
-        --boot cdrom \
+        --disk "disk/$vm_name-disk.qcow2,device=disk,bus=virtio" \
+        --disk "cloud/$vm_name-init.img,device=disk,bus=virtio" \
         --network network="$network_name",model=virtio \
         --graphics none \
         --console pty,target_type="$os_serial"
@@ -232,23 +258,26 @@ set_os_info() {
 source ./images.ini
 
 # Use debian11 by default
-img_index=1
+img_index=''
 
 # Set image info
 set_os_info
 
 # VM creation default values
-vm_name=default-vm
-network_name=default
-vm_memory=2048
-vm_storage=16G
-vm_vcpus=2
+vm_name='default-vm'
+network_name='default'
+vm_memory='2048'
+vm_storage='16G'
+vm_vcpus='2'
 
 # No interaction by default
-console_interactive="--noautoconsole"
+option_attach_console='none'
+
+# Do not start VM by default
+option_do_not_boot='yes'
 
 # Run all procedures by default
-script_command=all
+script_command='all'
 
 # ARG parser
 if [ $# -eq 0 ]; then
@@ -270,8 +299,12 @@ else
                 script_command=prepare
                 shift # shift argument
             ;;
-            run)
-                script_command=run
+            create)
+                script_command=create
+                shift # shift argument
+            ;;
+            regenerate-cloud-init)
+                script_command=regenerate-cloud-init
                 shift # shift argument
             ;;
             all)
@@ -282,6 +315,11 @@ else
                 vm_name="$2"
                 shift # shift argument
                 shift # shift value
+            ;;
+            --image-index|-img)
+                img_index="$2"
+		shift # shift flag
+		shift # shift value
             ;;
             --os|-o)
                 os_variant="$2"
@@ -314,9 +352,13 @@ else
                 shift # shift value
             ;;
             --interactive|-i)
-                console_interactive=""
-                shift # shift argument
-                shift # shift value
+                option_attach_console='text'
+                option_do_not_boot='no'
+                shift # shift flag
+            ;;
+            --boot|-b)
+                option_do_not_boot='no'
+                shift # shift flag
             ;;
             -*)
                 error_msg "Unknown option $1" 22
@@ -333,7 +375,7 @@ else
 fi
 
 # Run image chooser by default
-choose_images
+choose_images "${img_index}"
 
 # Run Command parser
 case $script_command in
@@ -344,13 +386,16 @@ case $script_command in
         download_iso
         prepare_iso
     ;;
-    run)
-        run_iso
+    create)
+        create_vm
+    ;;
+    regenerate-cloud-init)
+        regenerate_cloud_init_disk
     ;;
     all)
         download_iso
         prepare_iso
-        run_iso
+        create_vm
     ;;
     *)
         error_msg "Unknown command to run: $script_command"
