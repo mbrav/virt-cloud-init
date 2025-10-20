@@ -35,45 +35,47 @@ To view script's instructions, run:
 You will get the following text
 
 ```text
-virt-cloud-init script v0.4.0
+virt-cloud-init script v0.5.0
 ABOUT
 Cloud init image preparation tool for virt and virt-manager
 
 SYNTAX
-./virt-cloud-init.sh [download|prepare|run|all] [-h] [-n|o|m|s|c|net|u|i] [ARG]
+./virt-cloud-init.sh [download|prepare|create|regenerate-cloud-init|all] [-h] [-n|o|m|s|c|net|img|u|i|b] [ARG]
 
 COMMANDS
-download            Download iso
-prepare             Prepare image and cloud-init iso
-run                 Run image with cloud-init iso
-all                 Run All commands above consecutively
+download               Download iso
+prepare                Prepare image and cloud-init iso
+create                 Create VM with cloud-init iso (optionally can run)
+regenerate-cloud-init  Cleans VM disk off cloud-init, regenerates the iso
+all                    Run All commands above consecutively
 
 OPTIONS
 -h --help           Print this Help.
 -n --name           Specify VM and image name prefix. Default: default-vm
--o --os             Specify OS variant. Default: debian11
+-o --os             Specify OS variant. Default: debian12
 -m --memory         Specify VM memory (in MiB). Default: 2048
 -s --storage        Specify VM images size (in K|M|G). Default: 16G
 -c --cpus           Specify CPU numbers. Default: 2
 -net --network      Specify Network name for VM. Default: default
--u --url            Specify custom url to an .qcow2 image. Default: https://cloud.debian.org/images/cloud/bullseye/latest/debian-11-generic-amd64.qcow2
--i --interactive (WIP)  Attach to console upon VM start. Default: false
+-img --image-index  Specify a known config listed in images.ini. By default asks dynamically.
+-u --url            Specify custom url to an .qcow2 image. Default: https://cloud.debian.org/images/cloud/bookworm/daily/latest/debian-12-genericcloud-amd64-daily.qcow2
+-i --interactive    Flag to attaching console upon VM start (also boots the VM).
+-b --boot           Flag for booting VM after creation.
 ```
 
 Upon every run, you get the following interactive prompt:
 
 ```text
-0) debian12 debian-12-genericcloud-amd64-daily.qcow2
-1) debian11 debian-11-generic-amd64.qcow2
-2) debian10 debian-10-generic-amd64.qcow2
-3) ubuntu23.04 lunar-server-cloudimg-amd64.img
-4) ubuntu22.04 jammy-server-cloudimg-amd64.img
-5) ubuntu20.04 focal-server-cloudimg-amd64.img
-6) ubuntu18.04 bionic-server-cloudimg-amd64.img
-7) fedora37 Fedora-Cloud-Base-37-1.7.x86_64.qcow2
-8) fedora36 Fedora-Cloud-Base-36-1.5.x86_64.qcow2
-Please select and image (0-9):
-7
+0) debian13 debian-13-generic-arm64.qcow2
+1) debian12 debian-12-genericcloud-amd64-daily.qcow2
+2) debian11 debian-11-generic-amd64.qcow2
+3) debian10 debian-10-generic-amd64.qcow2
+4) ubuntu23.04 lunar-server-cloudimg-amd64.img
+5) ubuntu22.04 jammy-server-cloudimg-amd64.img
+6) ubuntu20.04 focal-server-cloudimg-amd64.img
+7) ubuntu18.04 bionic-server-cloudimg-amd64.img
+8) fedora37 Fedora-Cloud-Base-37-1.7.x86_64.qcow2
+9) fedora36 Fedora-Cloud-Base-36-1.5.x86_64.qcow2
 [✓] fedora37 Fedora-Cloud-Base-37-1.7.x86_64.qcow2 selected
 ```
 
